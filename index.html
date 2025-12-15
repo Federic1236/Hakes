@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hakes</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; text-align: center; }
+        #private-content { display: none; border: 2px solid green; padding: 30px; margin-top: 20px; }
+        #login-box { border: 1px solid #ccc; padding: 20px; max-width: 350px; margin: 0 auto; }
+        .error { color: red; margin-top: 10px; }
+        .success { color: green; margin-top: 10px; }
+        input[type="password"], button { padding: 10px; margin: 5px; width: 80%; }
+    </style>
+</head>
+<body>
+
+    <div id="login-box">
+        <h2>🔒 Restricted Access</h2>
+        <p>Enter the password to access the private content.</p>
+        <input type="password" id="user-pass" placeholder="Password">
+        <button onclick="attemptLogin()">Enter</button>
+        <p id="message-area"></p>
+    </div>
+
+    <div id="private-content">
+        <h1>✅ Secure Access Granted!</h1>
+    </div>
+
+    <script>
+        async function attemptLogin() {
+            const inputElement = document.getElementById('user-pass');
+            const messageArea = document.getElementById('message-area');
+            const password = inputElement.value;
+            
+            messageArea.className = ''; 
+            messageArea.textContent = 'Checking...';
+
+            try {
+              
+                const response = await fetch('/api/check-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: password })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                
+                    messageArea.className = 'success';
+                    messageArea.textContent = result.message;
+                    document.getElementById('login-box').style.display = 'none';
+                    document.getElementById('private-content').style.display = 'block';
+                } else {
+                  
+                    messageArea.className = 'error';
+                    messageArea.textContent = result.message;
+                    inputElement.value = ''; // Clear input
+                }
+
+            } catch (error) {
+                messageArea.className = 'error';
+                messageArea.textContent = 'An error occurred while connecting to the server.';
+                console.error('Fetch error:', error);
+            }
+        }
+    </script>
+
+</body>
+</html>
