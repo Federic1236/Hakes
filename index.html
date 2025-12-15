@@ -1,23 +1,80 @@
+<div id="denial-screen">
+        <video id="denial-video" src="./videos/denial-video.mp4" controls autoplay muted></video>
+    </div>
+
+    ```
+
+Here is the complete and final `index.html` file with the correct path to your video:
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hakes</title>
+    <title>SECURE VERCEL GATE with Video Denial</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; }
-        #private-content { display: none; border: 2px solid green; padding: 30px; margin-top: 20px; }
-        #login-box { border: 1px solid #ccc; padding: 20px; max-width: 350px; margin: 0 auto; }
+        body { 
+            font-family: sans-serif; 
+            padding: 20px; 
+            text-align: center;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Styles for the login form */
+        #login-box { 
+            border: 1px solid #ccc; 
+            padding: 20px; 
+            max-width: 400px; 
+            margin: 0 auto; 
+        }
+        input[type="password"], button { padding: 10px; margin: 5px; width: 80%; }
+        
+        /* Styles for the private content (Success) */
+        #private-content { 
+            display: none; 
+            border: 2px solid green; 
+            padding: 30px; 
+            margin-top: 20px;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        
+        /* Styles for the video denial screen (Failure) */
+        #denial-screen {
+            display: none; 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            z-index: 1000;
+        }
+
+        #denial-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; 
+        }
+        
+        /* Message styling */
         .error { color: red; margin-top: 10px; }
         .success { color: green; margin-top: 10px; }
-        input[type="password"], button { padding: 10px; margin: 5px; width: 80%; }
     </style>
 </head>
 <body>
 
+    <div id="denial-screen">
+        <video id="denial-video" src="./videos/denial-video.mp4" controls autoplay muted></video>
+    </div>
+
     <div id="login-box">
         <h2>🔒 Restricted Access</h2>
         <p>Enter the password to access the private content.</p>
+        
         <input type="password" id="user-pass" placeholder="Password">
         <button onclick="attemptLogin()">Enter</button>
         <p id="message-area"></p>
@@ -25,6 +82,7 @@
 
     <div id="private-content">
         <h1>✅ Secure Access Granted!</h1>
+        <p>You have successfully logged in and are viewing the private content!</p>
     </div>
 
     <script>
@@ -32,12 +90,14 @@
             const inputElement = document.getElementById('user-pass');
             const messageArea = document.getElementById('message-area');
             const password = inputElement.value;
+            const loginBox = document.getElementById('login-box');
+            const content = document.getElementById('private-content');
             
             messageArea.className = ''; 
             messageArea.textContent = 'Checking...';
 
             try {
-              
+                // Send the password to the secure Vercel API endpoint
                 const response = await fetch('/api/check-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -47,22 +107,34 @@
                 const result = await response.json();
 
                 if (result.success) {
-                
+                    // SUCCESS
                     messageArea.className = 'success';
                     messageArea.textContent = result.message;
-                    document.getElementById('login-box').style.display = 'none';
-                    document.getElementById('private-content').style.display = 'block';
+                    loginBox.style.display = 'none';
+                    content.style.display = 'block';
                 } else {
-                  
+                    // FAILURE: Trigger fullscreen video denial
                     messageArea.className = 'error';
-                    messageArea.textContent = result.message;
+                    messageArea.textContent = 'Invalid Credentials. Access Denied.';
                     inputElement.value = ''; // Clear input
+
+                    const denialScreen = document.getElementById('denial-screen');
+                    const denialVideo = document.getElementById('denial-video');
+
+                    // Hide login box and show the denial screen
+                    loginBox.style.display = 'none';
+                    denialScreen.style.display = 'block';
+                    
+                    // Attempt to play the video 
+                    denialVideo.play().catch(error => {
+                        console.log("Autoplay blocked. Showing denial screen but video may require user interaction to start.");
+                        // The denial screen (black background) is still visible even if autoplay fails.
+                    });
                 }
 
             } catch (error) {
                 messageArea.className = 'error';
                 messageArea.textContent = 'An error occurred while connecting to the server.';
-                console.error('Fetch error:', error);
             }
         }
     </script>
