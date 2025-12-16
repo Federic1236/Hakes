@@ -57,26 +57,26 @@
             object-fit: cover; 
         }
 
-        /* Styles for the FOCUS LOSS WARNING */
-        #focus-warning {
+        /* Styles for the FOCUS LOSS EASTER EGG (Persistent Overlay) */
+        #focus-effect {
             display: none; /* Hidden by default */
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.9); /* Semi-transparent black overlay */
+            background-color: rgba(0, 0, 0, 1.0); /* Full black overlay */
             z-index: 10000; /* Must be the highest z-index */
             text-align: center;
         }
-        #focus-warning img {
-            max-width: 90%;
-            max-height: 90%;
+        #focus-effect img {
+            width: 100%;
+            height: 100%;
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            border: 5px solid red;
+            top: 0;
+            left: 0;
+            /* Ensures the image covers the entire container, potentially cropping */
+            object-fit: cover; 
         }
         
         /* Message styling */
@@ -106,9 +106,8 @@
         <video id="denial-video" src="./videos/denial-video.mp4" controls autoplay></video>
     </div>
 
-    <div id="focus-warning">
-        <img src="./images/focus-loss-image.png" alt="Warning: Do not switch tabs!">
-        <audio id="warning-sound" src="./audio/warning.mp3" preload="auto" loop></audio>
+    <div id="focus-effect">
+        <img src="./images/scary.png" alt="Easter Egg!">
     </div>
 
     <div id="login-box">
@@ -137,28 +136,36 @@
         // Set the base URL for the Vercel API for easy management
         const VERCEL_API_BASE_URL = 'https://hakes.vercel.app'; 
 
-        // --- FOCUS LOSS WARNING LOGIC ---
-        const warningScreen = document.getElementById('focus-warning');
-        const warningSound = document.getElementById('warning-sound');
-        let accessGranted = false; // Flag to ensure warning only works after login
-        let wasHidden = false; // Tracks if the window was hidden
+        // --- PERSISTENT EASTER EGG LOGIC (Image Only) ---
+        const effectScreen = document.getElementById('focus-effect');
+        let accessGranted = false;  // True only after successful login
+        let hasLeft = false;        // True once the user has left the tab/window after login
+        let effectActive = false;   // True once the persistent effect is triggered
 
         document.addEventListener('visibilitychange', () => {
-            // 1. Update the 'wasHidden' flag when the user leaves the window
-            if (document.hidden) {
-                wasHidden = true;
-                warningSound.pause(); // Pause the audio when user leaves again
+            // 1. If the user leaves the window (becomes hidden)
+            if (document.hidden && accessGranted) {
+                // Set the flag showing they have left
+                hasLeft = true;
+                // If the effect is already active, hide the overlay when leaving
+                if (effectActive) {
+                     effectScreen.style.display = 'none';
+                }
             } 
             
-            // 2. Check if access is granted AND the user just returned AND the window was previously hidden
-            if (!document.hidden && accessGranted && wasHidden) {
-                // ACTION ON RETURN: Show Warning Image and Play Looping Sound
-                warningScreen.style.display = 'block';
-                warningSound.currentTime = 0; // Rewind the audio
-                warningSound.play().catch(e => console.log("Sound autoplay failed on return:", e));
+            // 2. If the user returns to the window (becomes visible)
+            if (!document.hidden && accessGranted) {
                 
-                // Reset the hidden flag
-                wasHidden = false; 
+                // A. TRIGGER: Activate persistence permanently if they have left before
+                if (hasLeft) {
+                    effectActive = true; 
+                }
+                
+                // B. PERSISTENCE: If the effect is active (either just triggered or previously triggered)
+                if (effectActive) {
+                    // Show the image/overlay
+                    effectScreen.style.display = 'block';
+                }
             }
         });
         
