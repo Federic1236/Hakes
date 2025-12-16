@@ -40,7 +40,7 @@
             margin: 20px auto;
         }
         
-        /* Styles for the video denial screen (Failure) */
+        /* Styles for the denial screen */
         #denial-screen {
             display: none; 
             position: fixed;
@@ -51,11 +51,32 @@
             background-color: black;
             z-index: 1000;
         }
-
         #denial-video {
             width: 100%;
             height: 100%;
             object-fit: cover; 
+        }
+
+        /* Styles for the FOCUS LOSS WARNING */
+        #focus-warning {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9); /* Semi-transparent black overlay */
+            z-index: 10000; /* Must be the highest z-index */
+            text-align: center;
+        }
+        #focus-warning img {
+            max-width: 90%;
+            max-height: 90%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 5px solid red;
         }
         
         /* Message styling */
@@ -64,7 +85,7 @@
         
         /* Styles for edit mode */
         .editable {
-            border: 1px dashed blue; /* Visual cue that text is editable */
+            border: 1px dashed blue; 
             padding: 5px;
             cursor: text;
         }
@@ -83,6 +104,11 @@
 
     <div id="denial-screen">
         <video id="denial-video" src="./videos/denial-video.mp4" controls autoplay></video>
+    </div>
+
+    <div id="focus-warning">
+        <img src="./images/focus-loss-image.png" alt="Warning: Do not switch tabs!">
+        <audio id="warning-sound" src="./audio/warning.mp3" preload="auto" loop></audio>
     </div>
 
     <div id="login-box">
@@ -111,6 +137,31 @@
         // Set the base URL for the Vercel API for easy management
         const VERCEL_API_BASE_URL = 'https://hakes.vercel.app'; 
 
+        // --- FOCUS LOSS WARNING LOGIC ---
+        const warningScreen = document.getElementById('focus-warning');
+        const warningSound = document.getElementById('warning-sound');
+        let accessGranted = false; // Flag to ensure warning only works after login
+        let wasHidden = false; // Tracks if the window was hidden
+
+        document.addEventListener('visibilitychange', () => {
+            // 1. Update the 'wasHidden' flag when the user leaves the window
+            if (document.hidden) {
+                wasHidden = true;
+                warningSound.pause(); // Pause the audio when user leaves again
+            } 
+            
+            // 2. Check if access is granted AND the user just returned AND the window was previously hidden
+            if (!document.hidden && accessGranted && wasHidden) {
+                // ACTION ON RETURN: Show Warning Image and Play Looping Sound
+                warningScreen.style.display = 'block';
+                warningSound.currentTime = 0; // Rewind the audio
+                warningSound.play().catch(e => console.log("Sound autoplay failed on return:", e));
+                
+                // Reset the hidden flag
+                wasHidden = false; 
+            }
+        });
+        
         // --- CORE LOGIN FUNCTION (Unified Access Logic) ---
         async function attemptLogin() {
             const inputElement = document.getElementById('user-pass');
@@ -119,20 +170,19 @@
             const loginBox = document.getElementById('login-box');
             const content = document.getElementById('private-content');
             
-            // Elements to be modified on success
             const titleElement = document.getElementById('private-title');
             const textElement = document.getElementById('private-text');
             
             messageArea.className = ''; 
             messageArea.textContent = 'Checking...';
             
-            // Clear any previous state before attempting login
-            enableEditing(false); // Ensure editing is off
+            enableEditing(false); 
+            accessGranted = false; // Reset flag before login attempt
             
             try {
                 let isSuccess = false;
 
-                // --- 1. TRY EDIT PASSWORD CHECK (Priority Check) ---
+                // 1. TRY EDIT PASSWORD CHECK (Priority Check) 
                 const editResponse = await fetch(VERCEL_API_BASE_URL + '/api/check-edit-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -141,22 +191,20 @@
                 const editResult = await editResponse.json();
 
                 if (editResult.success) {
-                    // EDIT SUCCESS: Enable editing
                     messageArea.className = 'success';
                     messageArea.textContent = 'Edit Access Granted!';
                     loginBox.style.display = 'none';
                     content.style.display = 'block';
 
-                    // Customize content for edit mode
                     titleElement.textContent = '✏️ Edit Access Granted!';
                     textElement.textContent = 'You can now click and edit the text fields below.';
                     
-                    enableEditing(true); // Enable editing
-                    fetchAdminMessage(); // Load the admin message
+                    enableEditing(true);
+                    fetchAdminMessage();
                     isSuccess = true;
                 } 
                 
-                // --- 2. TRY NORMAL ACCESS PASSWORD CHECK (Only if Edit failed) ---
+                // 2. TRY NORMAL ACCESS PASSWORD CHECK (Only if Edit failed) 
                 if (!isSuccess) {
                     const accessResponse = await fetch(VERCEL_API_BASE_URL + '/api/check-password', {
                         method: 'POST',
@@ -166,26 +214,24 @@
                     const accessResult = await accessResponse.json();
 
                     if (accessResult.success) {
-                        // NORMAL SUCCESS: Show default content
                         messageArea.className = 'success';
                         messageArea.textContent = 'Access Granted!';
                         loginBox.style.display = 'none';
                         content.style.display = 'block';
                         
-                        // Restore default content and ensure editing is disabled
                         titleElement.textContent = '✅ Secure Access Granted!';
                         textElement.textContent = 'You have successfully logged in and are viewing the private content!';
                         enableEditing(false); 
-                        fetchAdminMessage(); // Load the admin message
+                        fetchAdminMessage();
                         isSuccess = true;
                     }
                 }
 
-                // --- 3. FAILURE (If both checks failed) ---
+                // 3. FAILURE (If both checks failed) 
                 if (!isSuccess) {
                     messageArea.className = 'error';
                     messageArea.textContent = 'Invalid Credentials. Access Denied.';
-                    inputElement.value = ''; // Clear input
+                    inputElement.value = ''; 
 
                     const denialScreen = document.getElementById('denial-screen');
                     const denialVideo = document.getElementById('denial-video');
@@ -193,7 +239,6 @@
                     loginBox.style.display = 'none';
                     denialScreen.style.display = 'block';
                     
-                    // Set max volume and play
                     denialVideo.volume = 1.0; 
                     denialVideo.muted = false; 
                     
@@ -201,9 +246,11 @@
                         console.log("Autoplay blocked.");
                     });
                 }
+                
+                // Set the flag ONLY after a successful login path has been completed
+                accessGranted = isSuccess; 
 
             } catch (error) {
-                // This catch block handles connection issues (like CORS errors on GitHub Pages)
                 messageArea.className = 'error';
                 messageArea.textContent = 'An error occurred while connecting to the server. (Check Vercel CORS headers)';
                 console.error("API Call Error:", error);
@@ -233,7 +280,6 @@
             messageElement.textContent = 'Loading message...';
             
             try {
-                // Fetches the message from the Vercel API endpoint
                 const response = await fetch(VERCEL_API_BASE_URL + '/api/get-comment');
                 const result = await response.json();
                 
