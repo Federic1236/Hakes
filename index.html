@@ -4,9 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hakes</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    
     <style>
         body { 
-            font-family: inter; 
+            /* Updated font-family to reliably use Inter or fall back to sans-serif */
+            font-family: 'Inter', sans-serif; 
             padding: 20px; 
             text-align: center;
             margin: 0;
@@ -94,6 +100,9 @@
     </div>
 
     <script>
+        // Set the base URL for the Vercel API
+        const VERCEL_API_BASE_URL = 'https://hakes.vercel.app'; 
+
         // --- CORE LOGIN FUNCTION ---
         async function attemptLogin() {
             const inputElement = document.getElementById('user-pass');
@@ -106,8 +115,8 @@
             messageArea.textContent = 'Checking...';
 
             try {
-                // Check Access Password
-                const response = await fetch('/api/check-password', {
+                // Check Access Password - Uses the absolute Vercel URL
+                const response = await fetch(VERCEL_API_BASE_URL + '/api/check-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ password: password })
@@ -143,8 +152,10 @@
                 }
 
             } catch (error) {
+                // This catch block will execute if the server cannot be reached (like on GitHub Pages before this fix)
                 messageArea.className = 'error';
                 messageArea.textContent = 'An error occurred while connecting to the server.';
+                console.error("API Call Error:", error);
             }
         }
 
@@ -158,8 +169,8 @@
             editMessageArea.textContent = 'Checking Edit Password...';
 
             try {
-                // 1. Send Edit Password to a New API Endpoint
-                const response = await fetch('/api/check-edit-password', {
+                // 1. Send Edit Password to the NEW API Endpoint - Uses the absolute Vercel URL
+                const response = await fetch(VERCEL_API_BASE_URL + '/api/check-edit-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ editPassword: editPassword })
@@ -171,19 +182,22 @@
                     // SUCCESS: Enable content editing
                     editMessageArea.className = 'success';
                     editMessageArea.textContent = 'Edit Mode Enabled! Click the text to change it.';
-                    editInputElement.style.display = 'none'; // Hide the input
+                    editInputElement.value = ''; // Clear the input on success
                     
                     enableEditing(true);
                 } else {
-                    // FAILURE: Display edit denial message
+                    // FAILURE: Display edit denial message ONLY IN THE EDIT AREA
                     editMessageArea.className = 'error';
                     editMessageArea.textContent = 'Invalid Edit Password.';
                     editInputElement.value = ''; // Clear input
+                    
+                    enableEditing(false); // Ensure editing is disabled
                 }
 
             } catch (error) {
                 editMessageArea.className = 'error';
-                editMessageArea.textContent = 'An error occurred while connecting to the server.';
+                editMessageArea.textContent = 'An error occurred while connecting to the edit server.';
+                console.error("Edit API Call Error:", error);
             }
         }
         
@@ -192,11 +206,9 @@
             const titleElement = document.getElementById('private-title');
             const textElement = document.getElementById('private-text');
             
-            // Toggles the contenteditable attribute
             titleElement.setAttribute('contenteditable', isEditable);
             textElement.setAttribute('contenteditable', isEditable);
             
-            // Toggles the visual cue (CSS class)
             if (isEditable) {
                 titleElement.classList.add('editable');
                 textElement.classList.add('editable');
