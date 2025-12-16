@@ -11,7 +11,6 @@
     
     <style>
         body { 
-            /* Updated font-family to reliably use Inter or fall back to sans-serif */
             font-family: 'Inter', sans-serif; 
             padding: 20px; 
             text-align: center;
@@ -25,7 +24,9 @@
             border: 1px solid #ccc; 
             padding: 20px; 
             max-width: 400px; 
-            margin: 0 auto; 
+            margin: 0 auto;
+            /* Rounded corners for the login box */
+            border-radius: 15px; 
         }
         input[type="password"], button { padding: 10px; margin: 5px; width: 80%; }
         
@@ -61,14 +62,21 @@
         .error { color: red; margin-top: 10px; }
         .success { color: green; margin-top: 10px; }
         
-        /* New styles for edit mode */
+        /* Styles for edit mode */
         .editable {
             border: 1px dashed blue; /* Visual cue that text is editable */
             padding: 5px;
             cursor: text;
         }
-        #edit-controls { margin-top: 15px; }
-        #edit-input { width: 40%; margin-right: 10px; }
+        
+        /* Styles for the chat/message section */
+        #chat-section {
+            margin-top: 30px;
+            padding: 15px;
+            border: 1px solid #eee;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -92,18 +100,18 @@
         
         <hr>
         
-        <div id="edit-controls">
-            <input type="password" id="edit-input" placeholder="Edit Password">
-            <button onclick="attemptEdit()">Enable Editing</button>
-            <p id="edit-message-area"></p>
+        <div id="chat-section">
+            <h3>💬 Live Admin Message:</h3>
+            <p id="admin-message">Loading message...</p>
         </div>
+        
     </div>
 
     <script>
-        // Set the base URL for the Vercel API
+        // Set the base URL for the Vercel API for easy management
         const VERCEL_API_BASE_URL = 'https://hakes.vercel.app'; 
 
-        // --- CORE LOGIN FUNCTION ---
+        // --- CORE LOGIN FUNCTION (Unified Access Logic) ---
         async function attemptLogin() {
             const inputElement = document.getElementById('user-pass');
             const messageArea = document.getElementById('message-area');
@@ -111,27 +119,70 @@
             const loginBox = document.getElementById('login-box');
             const content = document.getElementById('private-content');
             
+            // Elements to be modified on success
+            const titleElement = document.getElementById('private-title');
+            const textElement = document.getElementById('private-text');
+            
             messageArea.className = ''; 
             messageArea.textContent = 'Checking...';
-
+            
+            // Clear any previous state before attempting login
+            enableEditing(false); // Ensure editing is off
+            
             try {
-                // Check Access Password - Uses the absolute Vercel URL
-                const response = await fetch(VERCEL_API_BASE_URL + '/api/check-password', {
+                let isSuccess = false;
+
+                // --- 1. TRY EDIT PASSWORD CHECK (Priority Check) ---
+                const editResponse = await fetch(VERCEL_API_BASE_URL + '/api/check-edit-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: password })
+                    body: JSON.stringify({ editPassword: password }) 
                 });
+                const editResult = await editResponse.json();
 
-                const result = await response.json();
-
-                if (result.success) {
-                    // SUCCESS: Show private content
+                if (editResult.success) {
+                    // EDIT SUCCESS: Enable editing
                     messageArea.className = 'success';
-                    messageArea.textContent = result.message;
+                    messageArea.textContent = 'Edit Access Granted!';
                     loginBox.style.display = 'none';
                     content.style.display = 'block';
-                } else {
-                    // FAILURE: Trigger fullscreen video denial
+
+                    // Customize content for edit mode
+                    titleElement.textContent = '✏️ Edit Access Granted!';
+                    textElement.textContent = 'You can now click and edit the text fields below.';
+                    
+                    enableEditing(true); // Enable editing
+                    fetchAdminMessage(); // Load the admin message
+                    isSuccess = true;
+                } 
+                
+                // --- 2. TRY NORMAL ACCESS PASSWORD CHECK (Only if Edit failed) ---
+                if (!isSuccess) {
+                    const accessResponse = await fetch(VERCEL_API_BASE_URL + '/api/check-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password: password })
+                    });
+                    const accessResult = await accessResponse.json();
+
+                    if (accessResult.success) {
+                        // NORMAL SUCCESS: Show default content
+                        messageArea.className = 'success';
+                        messageArea.textContent = 'Access Granted!';
+                        loginBox.style.display = 'none';
+                        content.style.display = 'block';
+                        
+                        // Restore default content and ensure editing is disabled
+                        titleElement.textContent = '✅ Secure Access Granted!';
+                        textElement.textContent = 'You have successfully logged in and are viewing the private content!';
+                        enableEditing(false); 
+                        fetchAdminMessage(); // Load the admin message
+                        isSuccess = true;
+                    }
+                }
+
+                // --- 3. FAILURE (If both checks failed) ---
+                if (!isSuccess) {
                     messageArea.className = 'error';
                     messageArea.textContent = 'Invalid Credentials. Access Denied.';
                     inputElement.value = ''; // Clear input
@@ -147,61 +198,19 @@
                     denialVideo.muted = false; 
                     
                     denialVideo.play().catch(error => {
-                        console.log("Autoplay blocked. Showing denial screen but video may require user interaction to start.");
+                        console.log("Autoplay blocked.");
                     });
                 }
 
             } catch (error) {
-                // This catch block will execute if the server cannot be reached (like on GitHub Pages before this fix)
+                // This catch block handles connection issues (like CORS errors on GitHub Pages)
                 messageArea.className = 'error';
-                messageArea.textContent = 'An error occurred while connecting to the server.';
+                messageArea.textContent = 'An error occurred while connecting to the server. (Check Vercel CORS headers)';
                 console.error("API Call Error:", error);
             }
         }
-
-        // --- NEW EDITING FUNCTION ---
-        async function attemptEdit() {
-            const editInputElement = document.getElementById('edit-input');
-            const editMessageArea = document.getElementById('edit-message-area');
-            const editPassword = editInputElement.value;
-            
-            editMessageArea.className = '';
-            editMessageArea.textContent = 'Checking Edit Password...';
-
-            try {
-                // 1. Send Edit Password to the NEW API Endpoint - Uses the absolute Vercel URL
-                const response = await fetch(VERCEL_API_BASE_URL + '/api/check-edit-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ editPassword: editPassword })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    // SUCCESS: Enable content editing
-                    editMessageArea.className = 'success';
-                    editMessageArea.textContent = 'Edit Mode Enabled! Click the text to change it.';
-                    editInputElement.value = ''; // Clear the input on success
-                    
-                    enableEditing(true);
-                } else {
-                    // FAILURE: Display edit denial message ONLY IN THE EDIT AREA
-                    editMessageArea.className = 'error';
-                    editMessageArea.textContent = 'Invalid Edit Password.';
-                    editInputElement.value = ''; // Clear input
-                    
-                    enableEditing(false); // Ensure editing is disabled
-                }
-
-            } catch (error) {
-                editMessageArea.className = 'error';
-                editMessageArea.textContent = 'An error occurred while connecting to the edit server.';
-                console.error("Edit API Call Error:", error);
-            }
-        }
         
-        // --- Helper Function to Toggle Editing ---
+        // --- HELPER FUNCTION: Toggle Editing ---
         function enableEditing(isEditable) {
             const titleElement = document.getElementById('private-title');
             const textElement = document.getElementById('private-text');
@@ -215,6 +224,27 @@
             } else {
                 titleElement.classList.remove('editable');
                 textElement.classList.remove('editable');
+            }
+        }
+
+        // --- NEW CHAT/COMMENT FUNCTION (Static Admin Message) ---
+        async function fetchAdminMessage() {
+            const messageElement = document.getElementById('admin-message');
+            messageElement.textContent = 'Loading message...';
+            
+            try {
+                // Fetches the message from the Vercel API endpoint
+                const response = await fetch(VERCEL_API_BASE_URL + '/api/get-comment');
+                const result = await response.json();
+                
+                if (result.success && result.message) {
+                    messageElement.textContent = result.message;
+                } else {
+                    messageElement.textContent = 'Could not retrieve administrator message.';
+                }
+            } catch (error) {
+                messageElement.textContent = 'Failed to connect to message server.';
+                console.error("Message API Call Error:", error);
             }
         }
         
