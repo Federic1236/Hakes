@@ -1,29 +1,26 @@
 // api/check-password.js
-// This code runs securely on the Vercel server.
+// Checks the primary access password against the SECRET_CODE environment variable.
 
-// Vercel serverless functions are based on Node.js/Express-like syntax.
 export default function handler(request, response) {
-    // 1. Read the secret from the secure Vercel environment variables.
-    // The name 'SECRET_CODE' must match the name you set in Vercel's dashboard.
+    // Read the secret from the secure Vercel environment variables.
     const CORRECT_PASSWORD = process.env.SECRET_CODE; 
 
-    // 2. Extract the password sent by the client (index.html)
-    // The password will be in the request body, sent as JSON.
+    // Extract the password sent by the client.
     const { password } = request.body;
 
-    // 3. Simple error handling: check if the password variable was set
+    // Check for server configuration error
     if (!CORRECT_PASSWORD) {
-        response.status(500).json({ success: false, message: 'Server configuration error: Password variable is missing.' });
+        response.status(500).json({ success: false, message: 'Server configuration error: Primary password (SECRET_CODE) is missing.' });
         return;
     }
 
-    // 4. Perform the secure comparison.
+    // Perform the secure comparison.
     if (!password || password !== CORRECT_PASSWORD) {
         // Send a 401 Unauthorized status and a failure message
         response.status(401).json({ success: false, message: 'Invalid Credentials.' });
         return;
     }
 
-    // 5. Success! If the passwords match, send a success message back.
+    // Success! 
     response.status(200).json({ success: true, message: 'Access Granted!' });
 }
