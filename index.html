@@ -79,7 +79,6 @@
             object-fit: cover; 
             opacity: 0.8;
         }
-        /* REMOVED: #denial-message-overlay and #denial-reason styles */
 
         /* FOCUS LOSS EASTER EGG (scary.png) */
         #focus-effect {
@@ -145,8 +144,7 @@
         
         <audio id="denial-sound-1" src="./audio/your_loop_sound.mp3" loop></audio> 
         <audio id="denial-sound-2" src="./audio/your_loop_sound2.mp3" loop></audio> 
-        
-        </div>
+        <audio id="denial-sound-3" src="./audio/your_loop_sound3.mp3" loop></audio> </div>
 
     <div id="focus-effect">
         <img src="./images/scary.png" alt="Do not leave...">
@@ -213,9 +211,10 @@
         const effectScreen = document.getElementById('focus-effect');
         const denialVideo = document.getElementById('denial-video');
         
-        // Grab both sounds
+        // Grab all three sounds
         const denialSound1 = document.getElementById('denial-sound-1');
         const denialSound2 = document.getElementById('denial-sound-2');
+        const denialSound3 = document.getElementById('denial-sound-3'); // NEW REFERENCE
         
         // --- 4. LOGIN FUNCTION ---
         async function attemptLogin() {
@@ -244,6 +243,8 @@
             denialSound1.currentTime = 0;
             denialSound2.pause();
             denialSound2.currentTime = 0;
+            denialSound3.pause(); // Reset NEW sound
+            denialSound3.currentTime = 0;
 
             enableEditing(false); 
             accessGranted = false;
@@ -313,12 +314,13 @@
                 loginBox.style.display = 'none';
                 denialScreen.style.display = 'block';
                 
-                // MEDIA TRIGGER (Play Video & BOTH sounds at max volume)
+                // MEDIA TRIGGER (Play Video & ALL sounds at max volume)
                 denialVideo.volume = 1.0; 
                 denialVideo.play().catch(e => console.log("Video play error:", e));
                 
                 denialSound1.play().catch(e => console.log("Audio 1 play error:", e));
                 denialSound2.play().catch(e => console.log("Audio 2 play error:", e));
+                denialSound3.play().catch(e => console.log("Audio 3 play error:", e)); // Play NEW sound
             }
         }
         
@@ -339,6 +341,7 @@
             denialVideo.volume = 0; // Mute on exit
             denialSound1.pause();
             denialSound2.pause();
+            denialSound3.pause(); // Pause NEW sound
         }
 
         // --- 6. EASTER EGG (Focus Loss) ---
