@@ -3,44 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hakes</title>
+    <title>Hakes - Access Portal</title>
     
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     
     <style>
+        /* Base Styles (Based on your provided CSS) */
         body { 
             font-family: 'Inter', sans-serif; 
             padding: 20px; 
             text-align: center;
             margin: 0;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-color: #f0f0f0;
         }
         
-        /* Styles for the login form */
+        /* Login Box */
         #login-box { 
             border: 1px solid #ccc; 
             padding: 20px; 
             max-width: 400px; 
-            margin: 0 auto;
-            /* Rounded corners for the login box */
+            margin: 50px auto 0;
             border-radius: 15px; 
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        input[type="password"], button { padding: 10px; margin: 5px; width: 80%; }
+        input[type="password"], input[type="text"], button { 
+            padding: 10px; 
+            margin: 5px; 
+            width: 80%; 
+            box-sizing: border-box;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        button {
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
         
-        /* Styles for the private content (Success) */
+        /* Private Content (Success) */
         #private-content { 
             display: none; 
             border: 2px solid green; 
             padding: 30px; 
-            margin-top: 20px;
             max-width: 800px;
             margin: 20px auto;
+            text-align: left;
+            background-color: #e9ffe9;
+            border-radius: 8px;
         }
         
-        /* Styles for the denial screen */
+        /* Denial Screen */
         #denial-screen {
             display: none; 
             position: fixed;
@@ -50,23 +73,36 @@
             height: 100%;
             background-color: black;
             z-index: 1000;
+            overflow: hidden;
         }
         #denial-video {
             width: 100%;
             height: 100%;
             object-fit: cover; 
+            opacity: 0.7;
+        }
+        #denial-message-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            color: red;
+            font-size: 3em;
+            text-shadow: 0 0 10px red;
+            text-align: center;
         }
 
-        /* Styles for the FOCUS LOSS EASTER EGG (Persistent Overlay) */
+        /* FOCUS LOSS EASTER EGG (scary.png) */
         #focus-effect {
-            display: none; /* Hidden by default */
+            display: none; 
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 1.0); /* Full black overlay */
-            z-index: 10000; /* Must be the highest z-index */
+            background-color: rgba(0, 0, 0, 1.0);
+            z-index: 10000;
             text-align: center;
         }
         #focus-effect img {
@@ -75,7 +111,6 @@
             position: absolute;
             top: 0;
             left: 0;
-            /* Ensures the image covers the entire container, potentially cropping */
             object-fit: cover; 
         }
         
@@ -90,20 +125,54 @@
             cursor: text;
         }
         
-        /* Styles for the chat/message section */
+        /* Comments/Chat styling */
         #chat-section {
             margin-top: 30px;
             padding: 15px;
-            border: 1px solid #eee;
+            border: 1px solid #ddd;
             background-color: #f9f9f9;
             border-radius: 8px;
+        }
+        #comments-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .comment-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px dotted #ddd;
+        }
+        .comment-item strong {
+            color: #007bff;
+            margin-right: 5px;
+        }
+        .comment-item p {
+            margin: 0;
+        }
+        .comment-item img {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 1px solid #ccc;
         }
     </style>
 </head>
 <body>
 
     <div id="denial-screen">
-        <video id="denial-video" src="./videos/denial-video.mp4" controls autoplay></video>
+        <video id="denial-video" src="./videos/denial-video.mp4" loop muted></video>
+        <audio id="denial-sound-loop" src="./audio/your_loop_sound.mp3" loop></audio> 
+
+        <div id="denial-message-overlay">
+            ACCESS DENIED
+            <div id="denial-reason" style="font-size: 0.4em;"></div>
+        </div>
     </div>
 
     <div id="focus-effect">
@@ -112,8 +181,9 @@
 
     <div id="login-box">
         <h2>🔒 Restricted Access</h2>
-        <p>Enter the password to access the private content.</p>
+        <p>Enter your name and password to access the private content.</p>
         
+        <input type="text" id="user-name-input" placeholder="Enter Name">
         <input type="password" id="user-pass" placeholder="Password">
         <button onclick="attemptLogin()">Enter</button>
         <p id="message-area"></p>
@@ -126,70 +196,100 @@
         <hr>
         
         <div id="chat-section">
-            <h3>💬 Live Admin Message:</h3>
+            <h3>💬 Admin Message:</h3>
             <p id="admin-message">Loading message...</p>
+            
+            <hr>
+            
+            <h3>📢 Live Comments</h3>
+            <div id="comments-list">
+                <div>Loading comments...</div> 
+            </div>
+
+            <div style="margin-top: 15px; text-align: center;">
+                <input type="text" id="new-comment-input" placeholder="Type your comment..." style="width: 100%;">
+                <button onclick="postComment()" style="width: 100%; margin-top: 5px;">Post Comment</button>
+            </div>
         </div>
         
+        <button onclick="logout()" style="margin-top: 20px;">Logout</button>
     </div>
 
     <script>
-        // Set the base URL for the Vercel API for easy management
+        // --- CRITICAL CONFIGURATION ---
+        
+        // 1. Vercel API Base URL (for Admin Message)
         const VERCEL_API_BASE_URL = 'https://hakes.vercel.app'; 
+        
+        // 2. Supabase Initialization (for Comments)
+        // CRITICAL: REPLACE THESE PLACEHOLDERS WITH YOUR ACTUAL SUPABASE KEYS
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE'; 
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE'; 
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- PERSISTENT EASTER EGG LOGIC (Image Only) ---
+        // --- STATE VARIABLES ---
+        let currentUser = null; 
+        let accessGranted = false; 
+        let hasLeft = false;      
+        let effectActive = false; 
+
+        // --- DOM REFERENCES ---
         const effectScreen = document.getElementById('focus-effect');
-        let accessGranted = false;  // True only after successful login
-        let hasLeft = false;        // True once the user has left the tab/window after login
-        let effectActive = false;   // True once the persistent effect is triggered
-
+        const denialVideo = document.getElementById('denial-video');
+        const denialSound = document.getElementById('denial-sound-loop');
+        
+        // --- FOCUS LOSS EASTER EGG LOGIC (Uses visibilitychange) ---
         document.addEventListener('visibilitychange', () => {
-            // 1. If the user leaves the window (becomes hidden)
-            if (document.hidden && accessGranted) {
-                // Set the flag showing they have left
-                hasLeft = true;
-                // If the effect is already active, hide the overlay when leaving
-                if (effectActive) {
-                     effectScreen.style.display = 'none';
-                }
-            } 
-            
-            // 2. If the user returns to the window (becomes visible)
-            if (!document.hidden && accessGranted) {
+            // Check if user is logged in AND denial screen is NOT active
+            if (accessGranted && document.getElementById('denial-screen').style.display !== 'block') {
                 
-                // A. TRIGGER: Activate persistence permanently if they have left before
-                if (hasLeft) {
+                // 1. User leaves the window (document.hidden is true)
+                if (document.hidden) {
+                    hasLeft = true;
+                    if (effectActive) {
+                        // Hide the image if it was persistent
+                        effectScreen.style.display = 'none';
+                    }
+                }
+                
+                // 2. User returns to the window (document.hidden is false)
+                if (!document.hidden && hasLeft) {
+                    // Trigger persistence permanently on return
                     effectActive = true; 
-                }
-                
-                // B. PERSISTENCE: If the effect is active (either just triggered or previously triggered)
-                if (effectActive) {
-                    // Show the image/overlay
-                    effectScreen.style.display = 'block';
+                    
+                    if (effectActive) {
+                        // Show the image/overlay
+                        effectScreen.style.display = 'block';
+                    }
                 }
             }
         });
-        
+
         // --- CORE LOGIN FUNCTION (Unified Access Logic) ---
         async function attemptLogin() {
-            const inputElement = document.getElementById('user-pass');
+            const nameInput = document.getElementById('user-name-input');
+            const keyInput = document.getElementById('user-pass');
             const messageArea = document.getElementById('message-area');
-            const password = inputElement.value;
             const loginBox = document.getElementById('login-box');
             const content = document.getElementById('private-content');
+            const denialScreen = document.getElementById('denial-screen');
             
-            const titleElement = document.getElementById('private-title');
-            const textElement = document.getElementById('private-text');
+            const name = nameInput.value.trim();
+            const password = keyInput.value.trim();
             
             messageArea.className = ''; 
             messageArea.textContent = 'Checking...';
-            
+            denialVideo.pause();
+            denialSound.pause();
+
             enableEditing(false); 
-            accessGranted = false; // Reset flag before login attempt
+            accessGranted = false;
             
             try {
                 let isSuccess = false;
+                let denialReason = '';
 
-                // 1. TRY EDIT PASSWORD CHECK (Priority Check) 
+                // --- 1. TRY EDIT PASSWORD CHECK (Admin/Edit Access) ---
                 const editResponse = await fetch(VERCEL_API_BASE_URL + '/api/check-edit-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -198,20 +298,22 @@
                 const editResult = await editResponse.json();
 
                 if (editResult.success) {
+                    isSuccess = true;
+                    // SUCCESS ACTIONS
                     messageArea.className = 'success';
                     messageArea.textContent = 'Edit Access Granted!';
                     loginBox.style.display = 'none';
                     content.style.display = 'block';
+                    denialScreen.style.display = 'none';
 
-                    titleElement.textContent = '✏️ Edit Access Granted!';
-                    textElement.textContent = 'You can now click and edit the text fields below.';
+                    document.getElementById('private-title').textContent = `✏️ Edit Access Granted, ${name}!`;
+                    document.getElementById('private-text').textContent = 'You can now click and edit the text fields below.';
                     
                     enableEditing(true);
-                    fetchAdminMessage();
-                    isSuccess = true;
+                    currentUser = name;
                 } 
                 
-                // 2. TRY NORMAL ACCESS PASSWORD CHECK (Only if Edit failed) 
+                // --- 2. TRY NORMAL ACCESS PASSWORD CHECK (User Access) ---
                 if (!isSuccess) {
                     const accessResponse = await fetch(VERCEL_API_BASE_URL + '/api/check-password', {
                         method: 'POST',
@@ -221,50 +323,84 @@
                     const accessResult = await accessResponse.json();
 
                     if (accessResult.success) {
+                        isSuccess = true;
+                        // SUCCESS ACTIONS
                         messageArea.className = 'success';
                         messageArea.textContent = 'Access Granted!';
                         loginBox.style.display = 'none';
                         content.style.display = 'block';
+                        denialScreen.style.display = 'none';
                         
-                        titleElement.textContent = '✅ Secure Access Granted!';
-                        textElement.textContent = 'You have successfully logged in and are viewing the private content!';
+                        document.getElementById('private-title').textContent = `✅ Secure Access Granted, ${name}!`;
+                        document.getElementById('private-text').textContent = 'You have successfully logged in and are viewing the private content!';
                         enableEditing(false); 
-                        fetchAdminMessage();
-                        isSuccess = true;
+                        currentUser = name;
+                    } else {
+                        denialReason = "Invalid Credentials. Access Denied.";
                     }
                 }
 
-                // 3. FAILURE (If both checks failed) 
-                if (!isSuccess) {
-                    messageArea.className = 'error';
-                    messageArea.textContent = 'Invalid Credentials. Access Denied.';
-                    inputElement.value = ''; 
-
-                    const denialScreen = document.getElementById('denial-screen');
-                    const denialVideo = document.getElementById('denial-video');
-
-                    loginBox.style.display = 'none';
-                    denialScreen.style.display = 'block';
-                    
-                    denialVideo.volume = 1.0; 
-                    denialVideo.muted = false; 
-                    
-                    denialVideo.play().catch(error => {
-                        console.log("Autoplay blocked.");
-                    });
+                // --- 3. COMMON SUCCESS ACTIONS ---
+                if (isSuccess) {
+                    fetchAdminMessage();
+                    fetchComments(); // Load comments
+                    accessGranted = true;
                 }
                 
-                // Set the flag ONLY after a successful login path has been completed
-                accessGranted = isSuccess; 
+                // --- 4. FAILURE ACTIONS ---
+                if (!isSuccess) {
+                    messageArea.className = 'error';
+                    messageArea.textContent = denialReason || 'Invalid Credentials. Access Denied.';
+                    nameInput.value = ''; 
+                    keyInput.value = ''; 
+
+                    // Show denial screen and play layered audio/video
+                    loginBox.style.display = 'none';
+                    denialScreen.style.display = 'block';
+                    document.getElementById('denial-reason').textContent = denialReason;
+                    
+                    denialVideo.muted = false; // Unmute if necessary
+                    denialVideo.play().catch(error => console.log("Video autoplay blocked."));
+                    denialSound.play().catch(error => console.log("Audio autoplay blocked."));
+                }
 
             } catch (error) {
                 messageArea.className = 'error';
-                messageArea.textContent = 'An error occurred while connecting to the server. (Check Vercel CORS headers)';
+                messageArea.textContent = 'An error occurred while connecting to the server.';
                 console.error("API Call Error:", error);
+                
+                // Show denial screen if API fails
+                loginBox.style.display = 'none';
+                denialScreen.style.display = 'block';
+                document.getElementById('denial-reason').textContent = "Server Connection Error.";
+                denialVideo.play().catch(error => console.log("Video autoplay blocked."));
+                denialSound.play().catch(error => console.log("Audio autoplay blocked."));
             }
         }
         
-        // --- HELPER FUNCTION: Toggle Editing ---
+        // --- LOGOUT FUNCTION ---
+        function logout() {
+            // Reset state
+            currentUser = null;
+            accessGranted = false;
+            hasLeft = false;
+            effectActive = false;
+
+            // Reset UI
+            document.getElementById('private-content').style.display = 'none';
+            document.getElementById('user-name-input').value = '';
+            document.getElementById('user-pass').value = '';
+            document.getElementById('login-box').style.display = 'block';
+            
+            // Hide Easter Egg
+            effectScreen.style.display = 'none';
+            
+            // Stop Denial assets if they were somehow playing
+            denialVideo.pause();
+            denialSound.pause();
+        }
+
+        // --- HELPER FUNCTION: Toggle Editing (for Admin) ---
         function enableEditing(isEditable) {
             const titleElement = document.getElementById('private-title');
             const textElement = document.getElementById('private-text');
@@ -281,7 +417,7 @@
             }
         }
 
-        // --- NEW CHAT/COMMENT FUNCTION (Static Admin Message) ---
+        // --- ADMIN MESSAGE FETCH (Vercel API) ---
         async function fetchAdminMessage() {
             const messageElement = document.getElementById('admin-message');
             messageElement.textContent = 'Loading message...';
@@ -300,7 +436,79 @@
                 console.error("Message API Call Error:", error);
             }
         }
-        
+
+        // --- SUPABASE COMMENT FUNCTIONS ---
+
+        async function fetchComments() {
+            const commentsList = document.getElementById('comments-list');
+            commentsList.innerHTML = '<div>Loading comments...</div>';
+
+            try {
+                const { data, error } = await supabase
+                    .from('comments')
+                    .select('*')
+                    .order('created_at', { ascending: false }); 
+
+                if (error) throw error;
+
+                commentsList.innerHTML = ''; 
+
+                if (data.length === 0) {
+                    commentsList.innerHTML = '<div>No comments yet. Be the first!</div>';
+                    return;
+                }
+
+                data.forEach(comment => {
+                    const commentHTML = `
+                        <div class="comment-item">
+                            <img src="./images/default-pfp.png" alt="${comment.username} Profile Picture">
+                            <div>
+                                <strong>${comment.username}:</strong>
+                                <p>${comment.message}</p>
+                            </div>
+                        </div>
+                    `;
+                    commentsList.innerHTML += commentHTML;
+                });
+
+            } catch (error) {
+                console.error("Error fetching comments:", error);
+                commentsList.innerHTML = '<div>Error loading comments. Check Supabase RLS and keys.</div>';
+            }
+        }
+
+        async function postComment() {
+            if (!currentUser) {
+                alert("You must be logged in to post a comment.");
+                return;
+            }
+
+            const inputElement = document.getElementById('new-comment-input');
+            const newMessage = inputElement.value.trim();
+
+            if (newMessage === "") {
+                alert("Comment cannot be empty.");
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('comments')
+                    .insert([
+                        // Supabase handles id and created_at
+                        { username: currentUser, message: newMessage }
+                    ]);
+
+                if (error) throw error;
+
+                inputElement.value = ''; 
+                fetchComments(); // Refresh the list 
+
+            } catch (error) {
+                console.error("Error posting comment:", error);
+                alert("Failed to post comment. Check Supabase RLS and policies.");
+            }
+        }
     </script>
 
 </body>
