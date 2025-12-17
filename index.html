@@ -152,7 +152,7 @@
 <body>
 
     <div id="denial-screen">
-        <video id="denial-video" src="./videos/denial-video.mp4" loop muted playsinline></video>
+        <video id="denial-video" src="./videos/denial-video.mp4" loop autoplay playsinline></video>
         
         <audio id="denial-sound-1" src="./audio/your_loop_sound.mp3" loop></audio> 
         <audio id="denial-sound-2" src="./audio/your_loop_sound2.mp3" loop></audio> 
@@ -209,8 +209,7 @@
         const SUPABASE_URL = 'https://gfrcflagflhjlrsxabra.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmcmNmbGFnZmxoamxyc3hhYnJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4OTUwMTEsImV4cCI6MjA4MTQ3MTAxMX0.eetI23nvTAkKJPqxGx4JvikJ1DkXSnVYyZhFVli4tH0'; 
 
-        // --- FIX: SAFE SUPABASE INITIALIZATION ---
-        // Prevents crash if script loads before Supabase is ready
+        // FIX: SAFE SUPABASE INITIALIZATION 
         let supabaseClient = null;
         if (window.supabase) {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -228,7 +227,7 @@
         const effectScreen = document.getElementById('focus-effect');
         const denialVideo = document.getElementById('denial-video');
         
-        // FIX: Grab both sounds
+        // Grab both sounds
         const denialSound1 = document.getElementById('denial-sound-1');
         const denialSound2 = document.getElementById('denial-sound-2');
         
@@ -254,7 +253,7 @@
             messageArea.textContent = 'Checking...';
             
             // Reset Media
-            denialVideo.muted = true; 
+            denialVideo.volume = 0; // Temporarily mute video while checking
             denialSound1.pause();
             denialSound1.currentTime = 0;
             denialSound2.pause();
@@ -316,10 +315,7 @@
                     fetchAdminMessage();
                     fetchComments(); 
                     accessGranted = true; 
-                } else {
-                    // Failure!
-                    throw new Error("Invalid Credentials");
-                }
+        
 
             } catch (error) {
                 console.error("Login Failed:", error);
@@ -330,8 +326,10 @@
                 denialScreen.style.display = 'block';
                 document.getElementById('denial-reason').textContent = error.message;
                 
-                // MEDIA TRIGGER (Play BOTH sounds)
-                denialVideo.muted = false; 
+                // MEDIA TRIGGER (Play Video & BOTH sounds)
+                // Set volume to max (1.0)
+                denialVideo.volume = 1.0; 
+                
                 denialVideo.play().catch(e => console.log("Video play error:", e));
                 
                 // Play Sound 1
@@ -355,6 +353,7 @@
             effectScreen.style.display = 'none';
             
             denialVideo.pause();
+            denialVideo.volume = 0; // Mute on exit
             denialSound1.pause();
             denialSound2.pause();
         }
