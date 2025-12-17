@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     
     <style>
-        /* Base Styles (Based on your provided CSS) */
+        /* --- CSS STYLES --- */
         body { 
             font-family: 'Inter', sans-serif; 
             padding: 20px; 
@@ -46,10 +46,9 @@
             background-color: #007bff;
             color: white;
             border: none;
+            font-weight: bold;
         }
-        button:hover {
-            background-color: #0056b3;
-        }
+        button:hover { background-color: #0056b3; }
         
         /* Private Content (Success) */
         #private-content { 
@@ -73,13 +72,12 @@
             height: 100%;
             background-color: black;
             z-index: 1000;
-            overflow: hidden;
         }
         #denial-video {
             width: 100%;
             height: 100%;
             object-fit: cover; 
-            opacity: 0.7;
+            opacity: 0.8;
         }
         #denial-message-overlay {
             position: absolute;
@@ -89,6 +87,7 @@
             z-index: 10;
             color: red;
             font-size: 3em;
+            font-weight: bold;
             text-shadow: 0 0 10px red;
             text-align: center;
         }
@@ -101,9 +100,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 1.0);
+            background-color: black;
             z-index: 10000;
-            text-align: center;
         }
         #focus-effect img {
             width: 100%;
@@ -114,18 +112,12 @@
             object-fit: cover; 
         }
         
-        /* Message styling */
-        .error { color: red; margin-top: 10px; }
-        .success { color: green; margin-top: 10px; }
+        /* Utilities */
+        .error { color: red; margin-top: 10px; font-weight: bold; }
+        .success { color: green; margin-top: 10px; font-weight: bold; }
+        .editable { border: 1px dashed blue; padding: 5px; cursor: text; background: white; }
         
-        /* Styles for edit mode */
-        .editable {
-            border: 1px dashed blue; 
-            padding: 5px;
-            cursor: text;
-        }
-        
-        /* Comments/Chat styling */
+        /* Chat Section */
         #chat-section {
             margin-top: 30px;
             padding: 15px;
@@ -139,6 +131,7 @@
             border: 1px solid #eee;
             padding: 10px;
             margin-bottom: 10px;
+            background: white;
         }
         .comment-item {
             display: flex;
@@ -146,13 +139,6 @@
             margin-bottom: 10px;
             padding-bottom: 5px;
             border-bottom: 1px dotted #ddd;
-        }
-        .comment-item strong {
-            color: #007bff;
-            margin-right: 5px;
-        }
-        .comment-item p {
-            margin: 0;
         }
         .comment-item img {
             width: 30px;
@@ -166,24 +152,24 @@
 <body>
 
     <div id="denial-screen">
-        <video id="denial-video" src="./videos/denial-video.mp4" loop muted></video>
+        <video id="denial-video" src="./videos/denial-video.mp4" loop muted autoplay playsinline></video>
         <audio id="denial-sound-loop" src="./audio/your_loop_sound.mp3" loop></audio> 
 
         <div id="denial-message-overlay">
             ACCESS DENIED
-            <div id="denial-reason" style="font-size: 0.4em;"></div>
+            <div id="denial-reason" style="font-size: 0.4em; margin-top: 10px;"></div>
         </div>
     </div>
 
     <div id="focus-effect">
-        <img src="./images/scary.png" alt="Easter Egg!">
+        <img src="./images/scary.png" alt="Do not leave...">
     </div>
 
     <div id="login-box">
         <h2>🔒 Restricted Access</h2>
-        <p>Enter your name and password to access the private content.</p>
+        <p>Enter your name and password.</p>
         
-        <input type="text" id="user-name-input" placeholder="Enter Name">
+        <input type="text" id="user-name-input" placeholder="Enter Name (Required for comments)">
         <input type="password" id="user-pass" placeholder="Password">
         <button onclick="attemptLogin()">Enter</button>
         <p id="message-area"></p>
@@ -191,7 +177,7 @@
 
     <div id="private-content">
         <h1 id="private-title" contenteditable="false">✅ Secure Access Granted!</h1>
-        <p id="private-text" contenteditable="false">You have successfully logged in and are viewing the private content!</p>
+        <p id="private-text" contenteditable="false">You have successfully logged in.</p>
         
         <hr>
         
@@ -206,66 +192,39 @@
                 <div>Loading comments...</div> 
             </div>
 
-            <div style="margin-top: 15px; text-align: center;">
+            <div style="margin-top: 15px;">
                 <input type="text" id="new-comment-input" placeholder="Type your comment..." style="width: 100%;">
                 <button onclick="postComment()" style="width: 100%; margin-top: 5px;">Post Comment</button>
             </div>
         </div>
         
-        <button onclick="logout()" style="margin-top: 20px;">Logout</button>
+        <button onclick="logout()" style="margin-top: 20px; background-color: #666;">Logout</button>
     </div>
 
     <script>
-        // --- CRITICAL CONFIGURATION ---
-        
-        // 1. Vercel API Base URL (for Admin Message)
+        // --- 1. CONFIGURATION ---
         const VERCEL_API_BASE_URL = 'https://hakes.vercel.app'; 
         
-        // 2. Supabase Initialization (for Comments)
-        // CRITICAL: REPLACE THESE PLACEHOLDERS WITH YOUR ACTUAL SUPABASE KEYS
+        // Supabase Keys (From your prompt)
         const SUPABASE_URL = 'https://gfrcflagflhjlrsxabra.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmcmNmbGFnZmxoamxyc3hhYnJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4OTUwMTEsImV4cCI6MjA4MTQ3MTAxMX0.eetI23nvTAkKJPqxGx4JvikJ1DkXSnVY-ZhFVli4tH0'; 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmcmNmbGFnZmxoamxyc3hhYnJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4OTUwMTEsImV4cCI6MjA4MTQ3MTAxMX0.eetI23nvTAkKJPqxGx4JvikJ1DkXSnVYyZhFVli4tH0'; 
 
-        // --- STATE VARIABLES ---
+        // FIX: Create client using a DIFFERENT variable name to avoid "redeclaration" error
+        // We use 'window.supabase' because the script tag loaded it globally
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- 2. STATE VARIABLES ---
         let currentUser = null; 
         let accessGranted = false; 
         let hasLeft = false;      
         let effectActive = false; 
 
-        // --- DOM REFERENCES ---
+        // --- 3. DOM REFERENCES ---
         const effectScreen = document.getElementById('focus-effect');
         const denialVideo = document.getElementById('denial-video');
         const denialSound = document.getElementById('denial-sound-loop');
         
-        // --- FOCUS LOSS EASTER EGG LOGIC (Uses visibilitychange) ---
-        document.addEventListener('visibilitychange', () => {
-            // Check if user is logged in AND denial screen is NOT active
-            if (accessGranted && document.getElementById('denial-screen').style.display !== 'block') {
-                
-                // 1. User leaves the window (document.hidden is true)
-                if (document.hidden) {
-                    hasLeft = true;
-                    if (effectActive) {
-                        // Hide the image if it was persistent
-                        effectScreen.style.display = 'none';
-                    }
-                }
-                
-                // 2. User returns to the window (document.hidden is false)
-                if (!document.hidden && hasLeft) {
-                    // Trigger persistence permanently on return
-                    effectActive = true; 
-                    
-                    if (effectActive) {
-                        // Show the image/overlay
-                        effectScreen.style.display = 'block';
-                    }
-                }
-            }
-        });
-
-        // --- CORE LOGIN FUNCTION (Unified Access Logic) ---
+        // --- 4. LOGIN FUNCTION ---
         async function attemptLogin() {
             const nameInput = document.getElementById('user-name-input');
             const keyInput = document.getElementById('user-pass');
@@ -277,10 +236,13 @@
             const name = nameInput.value.trim();
             const password = keyInput.value.trim();
             
+            // Reset UI
             messageArea.className = ''; 
             messageArea.textContent = 'Checking...';
-            denialVideo.pause();
+            // Ensure media is reset
+            denialVideo.muted = true; 
             denialSound.pause();
+            denialSound.currentTime = 0;
 
             enableEditing(false); 
             accessGranted = false;
@@ -289,162 +251,143 @@
                 let isSuccess = false;
                 let denialReason = '';
 
-                // --- 1. TRY EDIT PASSWORD CHECK (Admin/Edit Access) ---
-                const editResponse = await fetch(VERCEL_API_BASE_URL + '/api/check-edit-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ editPassword: password }) 
-                });
-                const editResult = await editResponse.json();
+                // A. CHECK EDIT PASSWORD (Admin)
+                try {
+                    const editResponse = await fetch(VERCEL_API_BASE_URL + '/api/check-edit-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ editPassword: password }) 
+                    });
+                    if (editResponse.ok) {
+                        const editResult = await editResponse.json();
+                        if (editResult.success) {
+                            isSuccess = true;
+                            // Setup Admin UI
+                            document.getElementById('private-title').textContent = `✏️ Edit Access Granted, ${name}!`;
+                            document.getElementById('private-text').textContent = 'You can now click text to edit.';
+                            enableEditing(true);
+                        }
+                    }
+                } catch (e) { console.warn("Edit check failed (network/api)", e); }
 
-                if (editResult.success) {
-                    isSuccess = true;
-                    // SUCCESS ACTIONS
-                    messageArea.className = 'success';
-                    messageArea.textContent = 'Edit Access Granted!';
-                    loginBox.style.display = 'none';
-                    content.style.display = 'block';
-                    denialScreen.style.display = 'none';
-
-                    document.getElementById('private-title').textContent = `✏️ Edit Access Granted, ${name}!`;
-                    document.getElementById('private-text').textContent = 'You can now click and edit the text fields below.';
-                    
-                    enableEditing(true);
-                    currentUser = name;
-                } 
-                
-                // --- 2. TRY NORMAL ACCESS PASSWORD CHECK (User Access) ---
+                // B. CHECK USER PASSWORD (If Admin failed)
                 if (!isSuccess) {
                     const accessResponse = await fetch(VERCEL_API_BASE_URL + '/api/check-password', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ password: password })
                     });
-                    const accessResult = await accessResponse.json();
-
-                    if (accessResult.success) {
-                        isSuccess = true;
-                        // SUCCESS ACTIONS
-                        messageArea.className = 'success';
-                        messageArea.textContent = 'Access Granted!';
-                        loginBox.style.display = 'none';
-                        content.style.display = 'block';
-                        denialScreen.style.display = 'none';
-                        
-                        document.getElementById('private-title').textContent = `✅ Secure Access Granted, ${name}!`;
-                        document.getElementById('private-text').textContent = 'You have successfully logged in and are viewing the private content!';
-                        enableEditing(false); 
-                        currentUser = name;
+                    
+                    if (accessResponse.ok) {
+                        const accessResult = await accessResponse.json();
+                        if (accessResult.success) {
+                            isSuccess = true;
+                            document.getElementById('private-title').textContent = `✅ Secure Access Granted, ${name}!`;
+                            document.getElementById('private-text').textContent = 'Welcome to the private content.';
+                            enableEditing(false); 
+                        } else {
+                            denialReason = "Invalid Password.";
+                        }
                     } else {
-                        denialReason = "Invalid Credentials. Access Denied.";
+                        denialReason = "Server Error (Check API).";
                     }
                 }
 
-                // --- 3. COMMON SUCCESS ACTIONS ---
+                // C. RESULT HANDLING
                 if (isSuccess) {
-                    fetchAdminMessage();
-                    fetchComments(); // Load comments
-                    accessGranted = true;
-                }
-                
-                // --- 4. FAILURE ACTIONS ---
-                if (!isSuccess) {
-                    messageArea.className = 'error';
-                    messageArea.textContent = denialReason || 'Invalid Credentials. Access Denied.';
-                    nameInput.value = ''; 
-                    keyInput.value = ''; 
-
-                    // Show denial screen and play layered audio/video
+                    // Success!
+                    currentUser = name || "Anonymous";
                     loginBox.style.display = 'none';
-                    denialScreen.style.display = 'block';
-                    document.getElementById('denial-reason').textContent = denialReason;
+                    content.style.display = 'block';
+                    denialScreen.style.display = 'none';
+                    messageArea.className = 'success';
                     
-                    denialVideo.muted = false; // Unmute if necessary
-                    denialVideo.play().catch(error => console.log("Video autoplay blocked."));
-                    denialSound.play().catch(error => console.log("Audio autoplay blocked."));
+                    fetchAdminMessage();
+                    fetchComments(); 
+                    accessGranted = true; // Enable Easter Egg
+                } else {
+                    // Failure!
+                    throw new Error(denialReason || "Invalid Credentials");
                 }
 
             } catch (error) {
+                // FAILURE / ERROR ACTIONS
+                console.error("Login Failed:", error);
                 messageArea.className = 'error';
-                messageArea.textContent = 'An error occurred while connecting to the server.';
-                console.error("API Call Error:", error);
+                messageArea.textContent = 'ACCESS DENIED.';
                 
-                // Show denial screen if API fails
+                // Trigger Denial Screen
                 loginBox.style.display = 'none';
                 denialScreen.style.display = 'block';
-                document.getElementById('denial-reason').textContent = "Server Connection Error.";
-                denialVideo.play().catch(error => console.log("Video autoplay blocked."));
-                denialSound.play().catch(error => console.log("Audio autoplay blocked."));
+                document.getElementById('denial-reason').textContent = error.message;
+                
+                // MEDIA TRIGGER (The Fix)
+                // 1. Unmute video (browser allows this because user clicked 'Enter')
+                denialVideo.muted = false; 
+                denialVideo.volume = 1.0;
+                
+                // 2. Play Video & Audio
+                const playPromise = denialVideo.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => console.log("Video play error:", e));
+                }
+                denialSound.play().catch(e => console.log("Audio play error:", e));
             }
         }
         
-        // --- LOGOUT FUNCTION ---
+        // --- 5. LOGOUT ---
         function logout() {
-            // Reset state
             currentUser = null;
             accessGranted = false;
             hasLeft = false;
             effectActive = false;
 
-            // Reset UI
             document.getElementById('private-content').style.display = 'none';
             document.getElementById('user-name-input').value = '';
             document.getElementById('user-pass').value = '';
             document.getElementById('login-box').style.display = 'block';
-            
-            // Hide Easter Egg
             effectScreen.style.display = 'none';
             
-            // Stop Denial assets if they were somehow playing
             denialVideo.pause();
             denialSound.pause();
         }
 
-        // --- HELPER FUNCTION: Toggle Editing (for Admin) ---
-        function enableEditing(isEditable) {
-            const titleElement = document.getElementById('private-title');
-            const textElement = document.getElementById('private-text');
-            
-            titleElement.setAttribute('contenteditable', isEditable);
-            textElement.setAttribute('contenteditable', isEditable);
-            
-            if (isEditable) {
-                titleElement.classList.add('editable');
-                textElement.classList.add('editable');
-            } else {
-                titleElement.classList.remove('editable');
-                textElement.classList.remove('editable');
+        // --- 6. EASTER EGG (Focus Loss) ---
+        document.addEventListener('visibilitychange', () => {
+            if (accessGranted && document.getElementById('denial-screen').style.display !== 'block') {
+                if (document.hidden) {
+                    hasLeft = true;
+                    // Hide if currently active so it doesn't look weird in tab preview
+                    effectScreen.style.display = 'none'; 
+                }
+                if (!document.hidden && hasLeft) {
+                    effectActive = true; 
+                    effectScreen.style.display = 'block';
+                }
             }
-        }
+        });
 
-        // --- ADMIN MESSAGE FETCH (Vercel API) ---
+        // --- 7. ADMIN MESSAGE ---
         async function fetchAdminMessage() {
-            const messageElement = document.getElementById('admin-message');
-            messageElement.textContent = 'Loading message...';
-            
             try {
                 const response = await fetch(VERCEL_API_BASE_URL + '/api/get-comment');
                 const result = await response.json();
-                
                 if (result.success && result.message) {
-                    messageElement.textContent = result.message;
-                } else {
-                    messageElement.textContent = 'Could not retrieve administrator message.';
+                    document.getElementById('admin-message').textContent = result.message;
                 }
             } catch (error) {
-                messageElement.textContent = 'Failed to connect to message server.';
-                console.error("Message API Call Error:", error);
+                document.getElementById('admin-message').textContent = 'Message unavailable.';
             }
         }
 
-        // --- SUPABASE COMMENT FUNCTIONS ---
-
+        // --- 8. SUPABASE COMMENTS ---
         async function fetchComments() {
             const commentsList = document.getElementById('comments-list');
-            commentsList.innerHTML = '<div>Loading comments...</div>';
+            commentsList.innerHTML = '<div>Loading...</div>';
 
             try {
-                const { data, error } = await supabase
+                // Use the CORRECTED variable name: supabaseClient
+                const { data, error } = await supabaseClient
                     .from('comments')
                     .select('*')
                     .order('created_at', { ascending: false }); 
@@ -452,66 +395,65 @@
                 if (error) throw error;
 
                 commentsList.innerHTML = ''; 
-
-                if (data.length === 0) {
-                    commentsList.innerHTML = '<div>No comments yet. Be the first!</div>';
+                if (!data || data.length === 0) {
+                    commentsList.innerHTML = '<div>No comments yet.</div>';
                     return;
                 }
 
                 data.forEach(comment => {
-                    const commentHTML = `
+                    const safeUser = comment.username ? comment.username.replace(/</g, "&lt;") : "Anon";
+                    const safeMsg = comment.message ? comment.message.replace(/</g, "&lt;") : "";
+                    
+                    commentsList.innerHTML += `
                         <div class="comment-item">
-                            <img src="./images/default-pfp.png" alt="${comment.username} Profile Picture">
+                            <img src="./images/default-pfp.png" alt="pfp">
                             <div>
-                                <strong>${comment.username}:</strong>
-                                <p>${comment.message}</p>
+                                <strong>${safeUser}:</strong>
+                                <p>${safeMsg}</p>
                             </div>
-                        </div>
-                    `;
-                    commentsList.innerHTML += commentHTML;
+                        </div>`;
                 });
-
             } catch (error) {
-                console.error("Error fetching comments:", error);
-                commentsList.innerHTML = '<div>Error loading comments. Check Supabase RLS and keys.</div>';
+                console.error("Supabase Error:", error);
+                commentsList.innerHTML = '<div>Error loading comments.</div>';
             }
         }
 
         async function postComment() {
-            if (!currentUser) {
-                alert("You must be logged in to post a comment.");
-                return;
-            }
-
-            const inputElement = document.getElementById('new-comment-input');
-            const newMessage = inputElement.value.trim();
-
-            if (newMessage === "") {
-                alert("Comment cannot be empty.");
-                return;
-            }
+            if (!currentUser) return alert("Please log in.");
+            const input = document.getElementById('new-comment-input');
+            const msg = input.value.trim();
+            if (!msg) return;
 
             try {
-                const { error } = await supabase
+                // Use the CORRECTED variable name: supabaseClient
+                const { error } = await supabaseClient
                     .from('comments')
-                    .insert([
-                        // Supabase handles id and created_at
-                        { username: currentUser, message: newMessage }
-                    ]);
+                    .insert([{ username: currentUser, message: msg }]);
 
                 if (error) throw error;
-
-                inputElement.value = ''; 
-                fetchComments(); // Refresh the list 
-
+                input.value = ''; 
+                fetchComments(); 
             } catch (error) {
-                console.error("Error posting comment:", error);
-                alert("Failed to post comment. Check Supabase RLS and policies.");
+                console.error("Post Error:", error);
+                alert("Failed to post.");
+            }
+        }
+        
+        // --- 9. HELPER: Edit Toggle ---
+        function enableEditing(isEditable) {
+            const t = document.getElementById('private-title');
+            const txt = document.getElementById('private-text');
+            t.setAttribute('contenteditable', isEditable);
+            txt.setAttribute('contenteditable', isEditable);
+            if (isEditable) {
+                t.classList.add('editable');
+                txt.classList.add('editable');
+            } else {
+                t.classList.remove('editable');
+                txt.classList.remove('editable');
             }
         }
     </script>
-
 </body>
 </html>
-
-
