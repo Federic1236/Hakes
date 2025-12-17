@@ -152,9 +152,10 @@
 <body>
 
     <div id="denial-screen">
-        <video id="denial-video" src="./videos/denial-video.mp4" loop muted autoplay playsinline></video>
-        <audio id="denial-sound-loop" src="./audio/your_loop_sound.mp3" loop></audio> 
-        <audio id="denial-sound-loop" src="./audio/your_loop_sound2.mp3" loop></audio> 
+        <video id="denial-video" src="./videos/denial-video.mp4" loop muted playsinline></video>
+        
+        <audio id="denial-sound-1" src="./audio/your_loop_sound.mp3" loop></audio> 
+        <audio id="denial-sound-2" src="./audio/your_loop_sound2.mp3" loop></audio> 
         
         <div id="denial-message-overlay">
             <div id="denial-reason" style="font-size: 0.4em; margin-top: 10px;"></div>
@@ -205,13 +206,17 @@
         // --- 1. CONFIGURATION ---
         const VERCEL_API_BASE_URL = 'https://hakes.vercel.app'; 
         
-        // Supabase Keys (From your prompt)
         const SUPABASE_URL = 'https://gfrcflagflhjlrsxabra.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmcmNmbGFnZmxoamxyc3hhYnJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4OTUwMTEsImV4cCI6MjA4MTQ3MTAxMX0.eetI23nvTAkKJPqxGx4JvikJ1DkXSnVYyZhFVli4tH0'; 
 
-        // FIX: Create client using a DIFFERENT variable name to avoid "redeclaration" error
-        // We use 'window.supabase' because the script tag loaded it globally
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // --- FIX: SAFE SUPABASE INITIALIZATION ---
+        // Prevents crash if script loads before Supabase is ready
+        let supabaseClient = null;
+        if (window.supabase) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } else {
+            console.error("Supabase library not loaded. Check connection.");
+        }
 
         // --- 2. STATE VARIABLES ---
         let currentUser = null; 
@@ -222,10 +227,18 @@
         // --- 3. DOM REFERENCES ---
         const effectScreen = document.getElementById('focus-effect');
         const denialVideo = document.getElementById('denial-video');
-        const denialSound = document.getElementById('denial-sound-loop');
+        
+        // FIX: Grab both sounds
+        const denialSound1 = document.getElementById('denial-sound-1');
+        const denialSound2 = document.getElementById('denial-sound-2');
         
         // --- 4. LOGIN FUNCTION ---
         async function attemptLogin() {
+            if (!supabaseClient) {
+                alert("Database not loaded. Refresh the page.");
+                return;
+            }
+
             const nameInput = document.getElementById('user-name-input');
             const keyInput = document.getElementById('user-pass');
             const messageArea = document.getElementById('message-area');
@@ -239,10 +252,13 @@
             // Reset UI
             messageArea.className = ''; 
             messageArea.textContent = 'Checking...';
-            // Ensure media is reset
+            
+            // Reset Media
             denialVideo.muted = true; 
-            denialSound.pause();
-            denialSound.currentTime = 0;
+            denialSound1.pause();
+            denialSound1.currentTime = 0;
+            denialSound2.pause();
+            denialSound2.currentTime = 0;
 
             enableEditing(false); 
             accessGranted = false;
@@ -262,13 +278,12 @@
                         const editResult = await editResponse.json();
                         if (editResult.success) {
                             isSuccess = true;
-                            // Setup Admin UI
                             document.getElementById('private-title').textContent = `✏️ Edit Access Granted, ${name}!`;
                             document.getElementById('private-text').textContent = 'You can now click text to edit.';
                             enableEditing(true);
                         }
                     }
-                } catch (e) { console.warn("Edit check failed (network/api)", e); }
+                } catch (e) { console.warn("Edit check failed", e); }
 
                 // B. CHECK USER PASSWORD (If Admin failed)
                 if (!isSuccess) {
@@ -285,6 +300,7 @@
                             document.getElementById('private-title').textContent = `✅ Secure Access Granted, ${name}!`;
                             document.getElementById('private-text').textContent = 'Welcome to the private content.';
                             enableEditing(false); 
+                        }
                     }
                 }
 
@@ -299,14 +315,13 @@
                     
                     fetchAdminMessage();
                     fetchComments(); 
-                    accessGranted = true; // Enable Easter Egg
+                    accessGranted = true; 
                 } else {
                     // Failure!
-                    throw new Error(denialReason || "Invalid Credentials");
+                    throw new Error("Invalid Credentials");
                 }
 
             } catch (error) {
-                // FAILURE / ERROR ACTIONS
                 console.error("Login Failed:", error);
                 messageArea.className = 'error';
                 
@@ -315,17 +330,14 @@
                 denialScreen.style.display = 'block';
                 document.getElementById('denial-reason').textContent = error.message;
                 
-                // MEDIA TRIGGER (The Fix)
-                // 1. Unmute video (browser allows this because user clicked 'Enter')
+                // MEDIA TRIGGER (Play BOTH sounds)
                 denialVideo.muted = false; 
-                denialVideo.volume = 1.0;
+                denialVideo.play().catch(e => console.log("Video play error:", e));
                 
-                // 2. Play Video & Audio
-                const playPromise = denialVideo.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(e => console.log("Video play error:", e));
-                }
-                denialSound.play().catch(e => console.log("Audio play error:", e));
+                // Play Sound 1
+                denialSound1.play().catch(e => console.log("Audio 1 play error:", e));
+                // Play Sound 2
+                denialSound2.play().catch(e => console.log("Audio 2 play error:", e));
             }
         }
         
@@ -343,7 +355,8 @@
             effectScreen.style.display = 'none';
             
             denialVideo.pause();
-            denialSound.pause();
+            denialSound1.pause();
+            denialSound2.pause();
         }
 
         // --- 6. EASTER EGG (Focus Loss) ---
@@ -351,7 +364,6 @@
             if (accessGranted && document.getElementById('denial-screen').style.display !== 'block') {
                 if (document.hidden) {
                     hasLeft = true;
-                    // Hide if currently active so it doesn't look weird in tab preview
                     effectScreen.style.display = 'none'; 
                 }
                 if (!document.hidden && hasLeft) {
@@ -380,7 +392,6 @@
             commentsList.innerHTML = '<div>Loading...</div>';
 
             try {
-                // Use the CORRECTED variable name: supabaseClient
                 const { data, error } = await supabaseClient
                     .from('comments')
                     .select('*')
@@ -420,7 +431,6 @@
             if (!msg) return;
 
             try {
-                // Use the CORRECTED variable name: supabaseClient
                 const { error } = await supabaseClient
                     .from('comments')
                     .insert([{ username: currentUser, message: msg }]);
@@ -451,8 +461,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
