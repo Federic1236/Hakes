@@ -154,7 +154,8 @@
     <div id="denial-screen">
         <video id="denial-video" src="./videos/denial-video.mp4" loop muted autoplay playsinline></video>
         <audio id="denial-sound-loop" src="./audio/your_loop_sound.mp3" loop></audio> 
-
+        <audio id="denial-sound-loop" src="./audio/your_loop_sound2.mp3" loop></audio> 
+        
         <div id="denial-message-overlay">
             <div id="denial-reason" style="font-size: 0.4em; margin-top: 10px;"></div>
         </div>
@@ -284,11 +285,6 @@
                             document.getElementById('private-title').textContent = `✅ Secure Access Granted, ${name}!`;
                             document.getElementById('private-text').textContent = 'Welcome to the private content.';
                             enableEditing(false); 
-                        } else {
-                            denialReason = "Invalid Password.";
-                        }
-                    } else {
-                        denialReason = "Server Error (Check API).";
                     }
                 }
 
@@ -313,7 +309,6 @@
                 // FAILURE / ERROR ACTIONS
                 console.error("Login Failed:", error);
                 messageArea.className = 'error';
-                messageArea.textContent = 'ACCESS DENIED.';
                 
                 // Trigger Denial Screen
                 loginBox.style.display = 'none';
@@ -456,5 +451,6 @@
     </script>
 </body>
 </html>
+
 
 
