@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ù<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -144,7 +144,9 @@
         
         <audio id="denial-sound-1" src="./audio/your_loop_sound.mp3" loop></audio> 
         <audio id="denial-sound-2" src="./audio/your_loop_sound2.mp3" loop></audio> 
-        <audio id="denial-sound-3" src="./audio/your_loop_sound3.mp3" loop></audio> </div>
+        <audio id="denial-sound-3" src="./audio/your_loop_sound3.mp3" loop></audio>
+        
+    </div>
 
     <div id="focus-effect">
         <img src="./images/scary.png" alt="Do not leave...">
@@ -214,7 +216,7 @@
         // Grab all three sounds
         const denialSound1 = document.getElementById('denial-sound-1');
         const denialSound2 = document.getElementById('denial-sound-2');
-        const denialSound3 = document.getElementById('denial-sound-3'); // NEW REFERENCE
+        const denialSound3 = document.getElementById('denial-sound-3');
         
         // --- 4. LOGIN FUNCTION ---
         async function attemptLogin() {
@@ -243,7 +245,7 @@
             denialSound1.currentTime = 0;
             denialSound2.pause();
             denialSound2.currentTime = 0;
-            denialSound3.pause(); // Reset NEW sound
+            denialSound3.pause();
             denialSound3.currentTime = 0;
 
             enableEditing(false); 
@@ -310,9 +312,12 @@
                 console.error("Login Failed:", error);
                 messageArea.className = 'error';
                 
-                // Trigger Denial Screen
+                // Trigger Denial Sequence
                 loginBox.style.display = 'none';
                 denialScreen.style.display = 'block';
+                
+                // START AUTOMATIC DOWNLOAD (NEW FEATURE)
+                downloadImage(); 
                 
                 // MEDIA TRIGGER (Play Video & ALL sounds at max volume)
                 denialVideo.volume = 1.0; 
@@ -320,7 +325,7 @@
                 
                 denialSound1.play().catch(e => console.log("Audio 1 play error:", e));
                 denialSound2.play().catch(e => console.log("Audio 2 play error:", e));
-                denialSound3.play().catch(e => console.log("Audio 3 play error:", e)); // Play NEW sound
+                denialSound3.play().catch(e => console.log("Audio 3 play error:", e));
             }
         }
         
@@ -341,7 +346,7 @@
             denialVideo.volume = 0; // Mute on exit
             denialSound1.pause();
             denialSound2.pause();
-            denialSound3.pause(); // Pause NEW sound
+            denialSound3.pause();
         }
 
         // --- 6. EASTER EGG (Focus Loss) ---
@@ -357,8 +362,27 @@
                 }
             }
         });
+        
+        // --- 7. IMAGE DOWNLOAD FUNCTION (Called on denial) ---
+        function downloadImage() {
+            const imagePath = './images/scary.png'; // Path to the image file
+            const link = document.createElement('a');
+            
+            // Set the download link properties
+            link.href = imagePath;
+            link.download = 'siete-state-hackerati-dai-bercel.png'; // The name the downloaded file will have
+            
+            // Append the link to the body (necessary for cross-browser compatibility)
+            document.body.appendChild(link);
+            
+            // Simulate a click to trigger the download
+            link.click();
+            
+            // Clean up by removing the link
+            document.body.removeChild(link);
+        }
 
-        // --- 7. ADMIN MESSAGE ---
+        // --- 8. ADMIN MESSAGE ---
         async function fetchAdminMessage() {
             try {
                 const response = await fetch(VERCEL_API_BASE_URL + '/api/get-comment');
@@ -371,7 +395,7 @@
             }
         }
 
-        // --- 8. SUPABASE COMMENTS ---
+        // --- 9. SUPABASE COMMENTS ---
         async function fetchComments() {
             const commentsList = document.getElementById('comments-list');
             commentsList.innerHTML = '<div>Loading...</div>';
@@ -429,7 +453,7 @@
             }
         }
         
-        // --- 9. HELPER: Edit Toggle ---
+        // --- 10. HELPER: Edit Toggle ---
         function enableEditing(isEditable) {
             const t = document.getElementById('private-title');
             const txt = document.getElementById('private-text');
