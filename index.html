@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hakes - Access Portal</title>
+    <title>Hakes</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -156,7 +156,6 @@
         <audio id="denial-sound-loop" src="./audio/your_loop_sound.mp3" loop></audio> 
 
         <div id="denial-message-overlay">
-            ACCESS DENIED
             <div id="denial-reason" style="font-size: 0.4em; margin-top: 10px;"></div>
         </div>
     </div>
@@ -169,7 +168,7 @@
         <h2>🔒 Restricted Access</h2>
         <p>Enter your name and password.</p>
         
-        <input type="text" id="user-name-input" placeholder="Enter Name (Required for comments)">
+        <input type="text" id="user-name-input" placeholder="Enter Name)">
         <input type="password" id="user-pass" placeholder="Password">
         <button onclick="attemptLogin()">Enter</button>
         <p id="message-area"></p>
@@ -187,7 +186,7 @@
             
             <hr>
             
-            <h3>📢 Live Comments</h3>
+            <h3>Comments</h3>
             <div id="comments-list">
                 <div>Loading comments...</div> 
             </div>
@@ -457,3 +456,4 @@
     </script>
 </body>
 </html>
+
