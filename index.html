@@ -79,18 +79,7 @@
             object-fit: cover; 
             opacity: 0.8;
         }
-        #denial-message-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
-            color: red;
-            font-size: 3em;
-            font-weight: bold;
-            text-shadow: 0 0 10px red;
-            text-align: center;
-        }
+        /* REMOVED: #denial-message-overlay and #denial-reason styles */
 
         /* FOCUS LOSS EASTER EGG (scary.png) */
         #focus-effect {
@@ -152,15 +141,12 @@
 <body>
 
     <div id="denial-screen">
-        <video id="denial-video" src="./videos/denial-video.mp4" loop autoplay playsinline></video>
+        <video id="denial-video" src="./videos/denial-video.mp4" loop playsinline></video>
         
         <audio id="denial-sound-1" src="./audio/your_loop_sound.mp3" loop></audio> 
         <audio id="denial-sound-2" src="./audio/your_loop_sound2.mp3" loop></audio> 
         
-        <div id="denial-message-overlay">
-            <div id="denial-reason" style="font-size: 0.4em; margin-top: 10px;"></div>
         </div>
-    </div>
 
     <div id="focus-effect">
         <img src="./images/scary.png" alt="Do not leave...">
@@ -209,7 +195,7 @@
         const SUPABASE_URL = 'https://gfrcflagflhjlrsxabra.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmcmNmbGFnZmxoamxyc3hhYnJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4OTUwMTEsImV4cCI6MjA4MTQ3MTAxMX0.eetI23nvTAkKJPqxGx4JvikJ1DkXSnVYyZhFVli4tH0'; 
 
-        // FIX: SAFE SUPABASE INITIALIZATION 
+        // SAFE SUPABASE INITIALIZATION 
         let supabaseClient = null;
         if (window.supabase) {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -252,8 +238,8 @@
             messageArea.className = ''; 
             messageArea.textContent = 'Checking...';
             
-            // Reset Media
-            denialVideo.volume = 0; // Temporarily mute video while checking
+            // Reset Media (set volume to zero for the check process)
+            denialVideo.volume = 0; 
             denialSound1.pause();
             denialSound1.currentTime = 0;
             denialSound2.pause();
@@ -264,8 +250,7 @@
             
             try {
                 let isSuccess = false;
-                let denialReason = '';
-
+                
                 // A. CHECK EDIT PASSWORD (Admin)
                 try {
                     const editResponse = await fetch(VERCEL_API_BASE_URL + '/api/check-edit-password', {
@@ -315,7 +300,10 @@
                     fetchAdminMessage();
                     fetchComments(); 
                     accessGranted = true; 
-        
+                } else {
+                    // Failure!
+                    throw new Error("Invalid Credentials");
+                }
 
             } catch (error) {
                 console.error("Login Failed:", error);
@@ -324,17 +312,12 @@
                 // Trigger Denial Screen
                 loginBox.style.display = 'none';
                 denialScreen.style.display = 'block';
-                document.getElementById('denial-reason').textContent = error.message;
                 
-                // MEDIA TRIGGER (Play Video & BOTH sounds)
-                // Set volume to max (1.0)
+                // MEDIA TRIGGER (Play Video & BOTH sounds at max volume)
                 denialVideo.volume = 1.0; 
-                
                 denialVideo.play().catch(e => console.log("Video play error:", e));
                 
-                // Play Sound 1
                 denialSound1.play().catch(e => console.log("Audio 1 play error:", e));
-                // Play Sound 2
                 denialSound2.play().catch(e => console.log("Audio 2 play error:", e));
             }
         }
